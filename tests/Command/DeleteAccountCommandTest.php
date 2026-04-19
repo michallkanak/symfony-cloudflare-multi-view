@@ -3,7 +3,7 @@
 namespace Michallkanak\SymfonyCloudflareMultiView\Tests\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Query;
+use Doctrine\ORM\AbstractQuery;
 use Doctrine\ORM\QueryBuilder;
 use Michallkanak\SymfonyCloudflareMultiView\Command\DeleteAccountCommand;
 use Michallkanak\SymfonyCloudflareMultiView\Entity\CfMultiViewDomain;
@@ -56,11 +56,11 @@ class DeleteAccountCommandTest extends TestCase
         $this->domainRepository->method('findBy')->willReturn([$domain]);
 
         // Mock for count query
-        $countQuery = $this->createMock(Query::class);
+        $countQuery = $this->createMock(AbstractQuery::class);
         $countQuery->method('getSingleScalarResult')->willReturn(10);
 
         // Mock for delete query
-        $deleteQuery = $this->createMock(Query::class);
+        $deleteQuery = $this->createMock(AbstractQuery::class);
         $deleteQuery->method('execute')->willReturn(10);
 
         $qb = $this->createMock(QueryBuilder::class);

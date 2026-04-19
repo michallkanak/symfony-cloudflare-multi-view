@@ -3,7 +3,7 @@
 namespace Michallkanak\SymfonyCloudflareMultiView\Tests\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Query;
+use Doctrine\ORM\AbstractQuery;
 use Doctrine\ORM\QueryBuilder;
 use Michallkanak\SymfonyCloudflareMultiView\Command\PurgeStatsCommand;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -36,7 +36,7 @@ class PurgeStatsCommandTest extends TestCase
 
     public function testExecuteAbortsWhenNoRecordsFound(): void
     {
-        $query = $this->createMock(Query::class);
+        $query = $this->createMock(AbstractQuery::class);
         $query->method('getSingleScalarResult')->willReturn(0);
 
         $qb = $this->createMock(QueryBuilder::class);
@@ -58,11 +58,11 @@ class PurgeStatsCommandTest extends TestCase
     public function testExecuteDeletesRecords(): void
     {
         // Mock count query
-        $countQuery = $this->createMock(Query::class);
+        $countQuery = $this->createMock(AbstractQuery::class);
         $countQuery->method('getSingleScalarResult')->willReturn(5);
 
         // Mock delete query
-        $deleteQuery = $this->createMock(Query::class);
+        $deleteQuery = $this->createMock(AbstractQuery::class);
         $deleteQuery->method('execute')->willReturn(5);
 
         $qb = $this->createMock(QueryBuilder::class);

@@ -421,13 +421,13 @@
                     </svg>
                 </div>
                 <div class="dropdown-menu" :class="{'show': open}" x-cloak>
-                    <div class="dropdown-item {% if currentRange == '1h' %}active{% endif %}" @click="window.location.href='?range=1h'">{{ 'dashboard.range.1h'|trans }}</div>
-                    <div class="dropdown-item {% if currentRange == '3h' %}active{% endif %}" @click="window.location.href='?range=3h'">{{ 'dashboard.range.3h'|trans }}</div>
-                    <div class="dropdown-item {% if currentRange == '6h' %}active{% endif %}" @click="window.location.href='?range=6h'">{{ 'dashboard.range.6h'|trans }}</div>
-                    <div class="dropdown-item {% if currentRange == '12h' %}active{% endif %}" @click="window.location.href='?range=12h'">{{ 'dashboard.range.12h'|trans }}</div>
-                    <div class="dropdown-item {% if currentRange == '24h' %}active{% endif %}" @click="window.location.href='?range=24h'">{{ 'dashboard.range.24h'|trans }}</div>
-                    <div class="dropdown-item {% if currentRange == '48h' %}active{% endif %}" @click="window.location.href='?range=48h'">{{ 'dashboard.range.48h'|trans }}</div>
-                    <div class="dropdown-item {% if currentRange == '7d' %}active{% endif %}" @click="window.location.href='?range=7d'">{{ 'dashboard.range.7d'|trans }}</div>
+                    <div class="dropdown-item {% if currentRange == '1h' %}active{% endif %}" @click="changeRange('1h')">{{ 'dashboard.range.1h'|trans }}</div>
+                    <div class="dropdown-item {% if currentRange == '3h' %}active{% endif %}" @click="changeRange('3h')">{{ 'dashboard.range.3h'|trans }}</div>
+                    <div class="dropdown-item {% if currentRange == '6h' %}active{% endif %}" @click="changeRange('6h')">{{ 'dashboard.range.6h'|trans }}</div>
+                    <div class="dropdown-item {% if currentRange == '12h' %}active{% endif %}" @click="changeRange('12h')">{{ 'dashboard.range.12h'|trans }}</div>
+                    <div class="dropdown-item {% if currentRange == '24h' %}active{% endif %}" @click="changeRange('24h')">{{ 'dashboard.range.24h'|trans }}</div>
+                    <div class="dropdown-item {% if currentRange == '48h' %}active{% endif %}" @click="changeRange('48h')">{{ 'dashboard.range.48h'|trans }}</div>
+                    <div class="dropdown-item {% if currentRange == '7d' %}active{% endif %}" @click="changeRange('7d')">{{ 'dashboard.range.7d'|trans }}</div>
                 </div>
             </div>
 
@@ -581,7 +581,7 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('DashboardData', (initialGroups) => ({
                 groups: initialGroups,
-                searchQuery: '',
+                searchQuery: sessionStorage.getItem('cf_search_query') || '',
                 sortCol: 'domainName',
                 sortAsc: true,
                 showCharts: localStorage.getItem('cf_show_charts') === 'true',
@@ -591,6 +591,7 @@
                 refreshTimer: null,
 
                 init() {
+                    this.$watch('searchQuery', val => sessionStorage.setItem('cf_search_query', val));
                     this.$watch('showCharts', val => localStorage.setItem('cf_show_charts', val));
                     this.$watch('blurDomains', val => localStorage.setItem('cf_blur_domains', val));
                     this.$watch('showCountries', val => {
@@ -620,6 +621,12 @@
                             window.location.reload();
                         }, minutes * 60 * 1000);
                     }
+                },
+
+                changeRange(range) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('range', range);
+                    window.location.href = url.toString();
                 },
 
                 setSort(col) {

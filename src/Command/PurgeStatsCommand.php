@@ -2,8 +2,7 @@
 
 namespace Michallkanak\SymfonyCloudflareMultiView\Command;
 
-use Doctrine\ORM\EntityManagerInterface;
-use Michallkanak\SymfonyCloudflareMultiView\Entity\CfMultiViewTrafficStat;
+use Michallkanak\SymfonyCloudflareMultiView\Repository\CfMultiViewTrafficStatRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,7 +18,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class PurgeStatsCommand extends Command
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
+        private CfMultiViewTrafficStatRepository $statRepository,
         private TranslatorInterface $translator,
     ) {
         parent::__construct();
@@ -53,14 +52,7 @@ class PurgeStatsCommand extends Command
         }
 
         // Count records to be deleted
-        $count = (int) $this->entityManager
-            ->createQueryBuilder()
-            ->select('COUNT(s.id)')
-            ->from(CfMultiViewTrafficStat::class, 's')
-            ->andWhere('s.timestamp < :cutoff')
-            ->setParameter('cutoff', $cutoff)
-            ->getQuery()
-            ->getSingleScalarResult();
+        $count = $this->statRepository->countOlderThan($cutoff);
 
         if (0 === $count) {
             $io->success($this->translator->trans('command.purge_stats.success.no_records', ['%olderThan%' => $olderThan]));
@@ -80,13 +72,7 @@ class PurgeStatsCommand extends Command
             return Command::SUCCESS;
         }
 
-        $deleted = $this->entityManager
-            ->createQueryBuilder()
-            ->delete(CfMultiViewTrafficStat::class, 's')
-            ->andWhere('s.timestamp < :cutoff')
-            ->setParameter('cutoff', $cutoff)
-            ->getQuery()
-            ->execute();
+        $deleted = $this->statRepository->deleteOlderThan($cutoff);
 
         $io->success($this->translator->trans('command.purge_stats.success.deleted', [
             '%deleted%' => $deleted,

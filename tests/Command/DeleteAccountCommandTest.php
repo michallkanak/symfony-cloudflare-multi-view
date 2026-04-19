@@ -3,11 +3,10 @@
 namespace Michallkanak\SymfonyCloudflareMultiView\Tests\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\AbstractQuery;
-use Doctrine\ORM\QueryBuilder;
 use Michallkanak\SymfonyCloudflareMultiView\Command\DeleteAccountCommand;
 use Michallkanak\SymfonyCloudflareMultiView\Entity\CfMultiViewDomain;
 use Michallkanak\SymfonyCloudflareMultiView\Repository\CfMultiViewDomainRepository;
+use Michallkanak\SymfonyCloudflareMultiView\Repository\CfMultiViewTrafficStatRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
@@ -18,6 +17,8 @@ class DeleteAccountCommandTest extends TestCase
 {
     /** @var CfMultiViewDomainRepository&MockObject */
     private $domainRepository;
+    /** @var CfMultiViewTrafficStatRepository&MockObject */
+    private $statRepository;
     /** @var EntityManagerInterface&MockObject */
     private $entityManager;
     /** @var TranslatorInterface&MockObject */
@@ -27,11 +28,17 @@ class DeleteAccountCommandTest extends TestCase
     protected function setUp(): void
     {
         $this->domainRepository = $this->createMock(CfMultiViewDomainRepository::class);
+        $this->statRepository = $this->createMock(CfMultiViewTrafficStatRepository::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->translator = $this->createMock(TranslatorInterface::class);
         $this->translator->method('trans')->willReturnArgument(0);
 
-        $command = new DeleteAccountCommand($this->domainRepository, $this->entityManager, $this->translator);
+        $command = new DeleteAccountCommand(
+            $this->domainRepository,
+            $this->statRepository,
+            $this->entityManager,
+            $this->translator
+        );
 
         $application = new Application();
         $application->add($command);
@@ -55,24 +62,9 @@ class DeleteAccountCommandTest extends TestCase
         $domain = new CfMultiViewDomain();
         $this->domainRepository->method('findBy')->willReturn([$domain]);
 
-        // Mock for count query
-        $countQuery = $this->createMock(AbstractQuery::class);
-        $countQuery->method('getSingleScalarResult')->willReturn(10);
+        $this->statRepository->method('countByAccountName')->willReturn(10);
+        $this->statRepository->expects($this->once())->method('deleteByAccountName')->with('Personal');
 
-        // Mock for delete query
-        $deleteQuery = $this->createMock(AbstractQuery::class);
-        $deleteQuery->method('execute')->willReturn(10);
-
-        $qb = $this->createMock(QueryBuilder::class);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('join')->willReturnSelf();
-        $qb->method('delete')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setParameter')->willReturnSelf();
-        $qb->method('getQuery')->willReturnOnConsecutiveCalls($countQuery, $deleteQuery);
-
-        $this->entityManager->method('createQueryBuilder')->willReturn($qb);
         $this->entityManager->expects($this->once())->method('remove')->with($domain);
         $this->entityManager->expects($this->once())->method('flush');
 

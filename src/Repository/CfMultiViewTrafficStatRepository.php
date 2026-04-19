@@ -57,4 +57,49 @@ class CfMultiViewTrafficStatRepository extends ServiceEntityRepository
 
         return $result?->getUpdatedAt();
     }
+
+    public function countByAccountName(string $accountName): int
+    {
+        return (int) $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->join('s.domain', 'd')
+            ->andWhere('d.accountName = :account')
+            ->setParameter('account', $accountName)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function deleteByAccountName(string $accountName): int
+    {
+        // Delete all stats where domain belongs to this account
+        $dql = 'DELETE FROM '.CfMultiViewTrafficStat::class.' s 
+                WHERE s.domain IN (
+                    SELECT d.id FROM '.\Michallkanak\SymfonyCloudflareMultiView\Entity\CfMultiViewDomain::class.' d 
+                    WHERE d.accountName = :account
+                )';
+
+        return (int) $this->getEntityManager()->createQuery($dql)
+            ->setParameter('account', $accountName)
+            ->execute();
+    }
+
+    public function countOlderThan(\DateTimeInterface $date): int
+    {
+        return (int) $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->andWhere('s.timestamp < :date')
+            ->setParameter('date', $date)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function deleteOlderThan(\DateTimeInterface $date): int
+    {
+        return (int) $this->createQueryBuilder('s')
+            ->delete()
+            ->andWhere('s.timestamp < :date')
+            ->setParameter('date', $date)
+            ->getQuery()
+            ->execute();
+    }
 }

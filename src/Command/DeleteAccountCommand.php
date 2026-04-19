@@ -3,8 +3,8 @@
 namespace Michallkanak\SymfonyCloudflareMultiView\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Michallkanak\SymfonyCloudflareMultiView\Entity\CfMultiViewTrafficStat;
 use Michallkanak\SymfonyCloudflareMultiView\Repository\CfMultiViewDomainRepository;
+use Michallkanak\SymfonyCloudflareMultiView\Repository\CfMultiViewTrafficStatRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,6 +21,7 @@ class DeleteAccountCommand extends Command
 {
     public function __construct(
         private CfMultiViewDomainRepository $domainRepository,
+        private CfMultiViewTrafficStatRepository $statRepository,
         private EntityManagerInterface $entityManager,
         private TranslatorInterface $translator,
     ) {
@@ -57,15 +58,7 @@ class DeleteAccountCommand extends Command
         $domainCount = count($domains);
 
         // Count total stats to be removed
-        $statsCount = (int) $this->entityManager
-            ->createQueryBuilder()
-            ->select('COUNT(s.id)')
-            ->from(CfMultiViewTrafficStat::class, 's')
-            ->join('s.domain', 'd')
-            ->andWhere('d.accountName = :accountName')
-            ->setParameter('accountName', $accountName)
-            ->getQuery()
-            ->getSingleScalarResult();
+        $statsCount = $this->statRepository->countByAccountName($accountName);
 
         $io->warning($this->translator->trans('command.delete_account.warning.confirmation', [
             '%accountName%' => $accountName,
@@ -80,13 +73,7 @@ class DeleteAccountCommand extends Command
         }
 
         // Delete all stats for this account's domains first (FK constraint)
-        $this->entityManager
-            ->createQueryBuilder()
-            ->delete(CfMultiViewTrafficStat::class, 's')
-            ->andWhere('s.domain IN (:domains)')
-            ->setParameter('domains', $domains)
-            ->getQuery()
-            ->execute();
+        $this->statRepository->deleteByAccountName($accountName);
 
         // Delete all domains for this account
         foreach ($domains as $domain) {

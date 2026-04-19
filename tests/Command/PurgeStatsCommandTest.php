@@ -2,10 +2,8 @@
 
 namespace Michallkanak\SymfonyCloudflareMultiView\Tests\Command;
 
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\AbstractQuery;
-use Doctrine\ORM\QueryBuilder;
 use Michallkanak\SymfonyCloudflareMultiView\Command\PurgeStatsCommand;
+use Michallkanak\SymfonyCloudflareMultiView\Repository\CfMultiViewTrafficStatRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
@@ -14,19 +12,19 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class PurgeStatsCommandTest extends TestCase
 {
-    /** @var EntityManagerInterface&MockObject */
-    private $entityManager;
+    /** @var CfMultiViewTrafficStatRepository&MockObject */
+    private $statRepository;
     /** @var TranslatorInterface&MockObject */
     private $translator;
     private CommandTester $commandTester;
 
     protected function setUp(): void
     {
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->statRepository = $this->createMock(CfMultiViewTrafficStatRepository::class);
         $this->translator = $this->createMock(TranslatorInterface::class);
         $this->translator->method('trans')->willReturnArgument(0);
 
-        $command = new PurgeStatsCommand($this->entityManager, $this->translator);
+        $command = new PurgeStatsCommand($this->statRepository, $this->translator);
 
         $application = new Application();
         $application->add($command);
@@ -36,17 +34,7 @@ class PurgeStatsCommandTest extends TestCase
 
     public function testExecuteAbortsWhenNoRecordsFound(): void
     {
-        $query = $this->createMock(AbstractQuery::class);
-        $query->method('getSingleScalarResult')->willReturn(0);
-
-        $qb = $this->createMock(QueryBuilder::class);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setParameter')->willReturnSelf();
-        $qb->method('getQuery')->willReturn($query);
-
-        $this->entityManager->method('createQueryBuilder')->willReturn($qb);
+        $this->statRepository->method('countOlderThan')->willReturn(0);
 
         $this->commandTester->execute(['--force' => true]);
 
@@ -57,23 +45,8 @@ class PurgeStatsCommandTest extends TestCase
 
     public function testExecuteDeletesRecords(): void
     {
-        // Mock count query
-        $countQuery = $this->createMock(AbstractQuery::class);
-        $countQuery->method('getSingleScalarResult')->willReturn(5);
-
-        // Mock delete query
-        $deleteQuery = $this->createMock(AbstractQuery::class);
-        $deleteQuery->method('execute')->willReturn(5);
-
-        $qb = $this->createMock(QueryBuilder::class);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('delete')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setParameter')->willReturnSelf();
-        $qb->method('getQuery')->willReturnOnConsecutiveCalls($countQuery, $deleteQuery);
-
-        $this->entityManager->method('createQueryBuilder')->willReturn($qb);
+        $this->statRepository->method('countOlderThan')->willReturn(5);
+        $this->statRepository->method('deleteOlderThan')->willReturn(5);
 
         $this->commandTester->execute([
             '--older-than' => '30 days',

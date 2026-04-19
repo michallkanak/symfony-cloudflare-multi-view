@@ -1,0 +1,19 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    bind:
+      $dashboardPassword: "%cf_multi_view.dashboard_password%"
+      $secureDashboard: "%cf_multi_view.secure_dashboard%"
+      $displayTimezone: "%cf_multi_view.timezone%"
+
+  Michallkanak\SymfonyCloudflareMultiView\:
+    resource: "../../"
+    exclude:
+      - "../../DependencyInjection/"
+      - "../../Entity/"
+      - "../../Tests/"
+
+  Michallkanak\SymfonyCloudflareMultiView\Service\CloudflareAccountRegistry:
+    arguments:
+      $accounts: "%cf_multi_view.accounts%"

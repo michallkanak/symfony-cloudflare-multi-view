@@ -1,0 +1,3 @@
+cf_multi_view:
+    resource: '../../Controller/'
+    type: attribute

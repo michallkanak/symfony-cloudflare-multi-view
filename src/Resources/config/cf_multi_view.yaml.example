@@ -1,0 +1,9 @@
+cf_multi_view:
+    dashboard_password: '%env(CF_DASHBOARD_PASSWORD)%'
+    secure_dashboard: true
+    timezone: 'Europe/Warsaw'
+    accounts:
+        - name: "My First Cloudflare Account"
+          token: '%env(CLOUDFLARE_TOKEN)%'
+        - name: "My Secondary Cloudflare Account"
+          token: '%env(CLOUDFLARE_TOKEN_SECONDARY)%'

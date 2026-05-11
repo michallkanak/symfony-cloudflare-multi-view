@@ -710,6 +710,58 @@
                 initChart(el, history) {
                     if (!history || history.length === 0) return;
 
+                    // Calculate the overall top countries across this history
+                    const countryTotals = {};
+                    history.forEach(h => {
+                        const tc = h.topCountries || {};
+                        for (const [country, count] of Object.entries(tc)) {
+                            countryTotals[country] = (countryTotals[country] || 0) + count;
+                        }
+                    });
+
+                    // Sort countries by total and get top 3
+                    const overallTopCountries = Object.entries(countryTotals)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(entry => entry[0])
+                        .slice(0, 3);
+
+                    const countryColors = ['#ef4444', '#f59e0b', '#10b981'];
+                    
+                    const datasets = [{
+                        label: 'Requests',
+                        data: history.map(h => h.requests),
+                        borderColor: '#818cf8',
+                        backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 1,
+                        borderWidth: 2
+                    }, {
+                        label: 'Visitors',
+                        data: history.map(h => h.visitors),
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'transparent',
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 1,
+                        borderWidth: 1.5
+                    }];
+
+                    overallTopCountries.forEach((country, index) => {
+                        datasets.push({
+                            label: country,
+                            isCountry: true,
+                            hidden: !this.showCountries,
+                            data: history.map(h => (h.topCountries && h.topCountries[country]) ? h.topCountries[country] : 0),
+                            borderColor: countryColors[index],
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            borderWidth: 1.5
+                        });
+                    });
+
                     // Kill existing chart if re-initing on same canvas
                     const existingChart = Chart.getChart(el);
                     if (existingChart) {
@@ -721,58 +773,7 @@
                             type: 'line',
                             data: {
                                 labels: history.map(h => h.label),
-                                datasets: [{
-                                    label: 'Requests',
-                                    data: history.map(h => h.requests),
-                                    borderColor: '#818cf8',
-                                    backgroundColor: 'rgba(129, 140, 248, 0.1)',
-                                    fill: true,
-                                    tension: 0.4,
-                                    pointRadius: 1,
-                                    borderWidth: 2
-                                }, {
-                                    label: 'Visitors',
-                                    data: history.map(h => h.visitors),
-                                    borderColor: '#38bdf8',
-                                    backgroundColor: 'transparent',
-                                    fill: false,
-                                    tension: 0.4,
-                                    pointRadius: 1,
-                                    borderWidth: 1.5
-                                }, {
-                                    label: 'Top 1 Country',
-                                    isCountry: true,
-                                    hidden: !this.showCountries,
-                                    data: history.map(h => Object.values(h.topCountries || {})[0] || 0),
-                                    borderColor: '#ef4444',
-                                    backgroundColor: 'transparent',
-                                    fill: false,
-                                    tension: 0.4,
-                                    pointRadius: 0,
-                                    borderWidth: 1.5
-                                }, {
-                                    label: 'Top 2 Country',
-                                    isCountry: true,
-                                    hidden: !this.showCountries,
-                                    data: history.map(h => Object.values(h.topCountries || {})[1] || 0),
-                                    borderColor: '#f59e0b',
-                                    backgroundColor: 'transparent',
-                                    fill: false,
-                                    tension: 0.4,
-                                    pointRadius: 0,
-                                    borderWidth: 1.5
-                                }, {
-                                    label: 'Top 3 Country',
-                                    isCountry: true,
-                                    hidden: !this.showCountries,
-                                    data: history.map(h => Object.values(h.topCountries || {})[2] || 0),
-                                    borderColor: '#10b981',
-                                    backgroundColor: 'transparent',
-                                    fill: false,
-                                    tension: 0.4,
-                                    pointRadius: 0,
-                                    borderWidth: 1.5
-                                }]
+                                datasets: datasets
                             },
                             options: {
                                 responsive: true,
@@ -800,11 +801,6 @@
                                                     let line = body.lines[0];
                                                     let label = line.split(': ')[0];
                                                     let val = line.split(': ')[1] || '';
-                                                    if (isCountry) {
-                                                        const dataIndex = tooltipModel.dataPoints[0].dataIndex;
-                                                        const countries = history[dataIndex].topCountries || {};
-                                                        label = Object.keys(countries)[i - 2] || '??';
-                                                    }
                                                     innerHtml += `
                                                         <div class="tooltip-line">
                                                             <div class="tooltip-color" style="background:${colors.borderColor}"></div>
